@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>USB Forge: build a verified multi-boot USB drive</title>
+<meta name="description" content="Free, open-source app for Windows and Linux that builds a multi-boot USB drive with the latest installers and rescue tools, each verified against its official SHA-256.">
+<meta property="og:title" content="USB Forge">
+<meta property="og:description" content="Build a multi-boot USB with the latest Ubuntu, Fedora, Mint, Debian, Hiren's, Clonezilla, GParted, Memtest86+ and more. Every ISO verified against its official SHA-256.">
+<meta property="og:image" content="https://skippynet.github.io/usb-forge/img/app.png">
+<meta property="og:url" content="https://skippynet.github.io/usb-forge/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="img/icon.png">
+<style>
+  :root {
+    --bg: #0f1117; --panel: #151821; --card: #1a1e29; --border: #2a303e;
+    --text: #e6e8ee; --muted: #8b93a7; --accent: #ff7a45; --accent-deep: #5a2e1c;
+    --ok: #4cc38a; --warn: #f5c451;
+    --radius: 14px; --max: 1120px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 "Segoe UI", system-ui, -apple-system, "Noto Sans", Ubuntu, Cantarell, sans-serif;
+    padding-inline: 20px;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { font: 0.9em ui-monospace, "Cascadia Code", "DejaVu Sans Mono", monospace; background: var(--panel);
+         border: 1px solid var(--border); border-radius: 6px; padding: 0.1em 0.4em; }
+  img { max-width: 100%; height: auto; display: block; }
+  .wrap { max-width: var(--max); margin: 0 auto; }
+
+  nav { display: flex; align-items: center; gap: 12px; padding-block: 18px; }
+  nav .brand { display: flex; align-items: center; gap: 10px; color: var(--text); font-weight: 600; font-size: 1.1rem; }
+  nav .brand img { width: 30px; }
+  nav .links { margin-left: auto; display: flex; gap: 20px; flex-wrap: wrap; }
+  nav .links a { color: var(--muted); }
+  nav .links a:hover { color: var(--text); text-decoration: none; }
+  @media (max-width: 640px) { nav .links a:not(:last-child) { display: none; } }
+  .hero h1, section h2 { overflow-wrap: anywhere; }
+
+  .hero { text-align: center; padding-block: 56px 32px; position: relative; }
+  .hero::before {
+    content: ""; position: absolute; inset: -40px 0 auto; height: 360px; z-index: -1;
+    background: radial-gradient(ellipse 420px 240px at 50% 0, rgba(255,122,69,.16), transparent 70%);
+  }
+  .hero h1 { font-size: clamp(2.1rem, 5vw, 3.4rem); line-height: 1.12; margin: 0 0 18px; letter-spacing: -0.02em; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p.lead { color: var(--muted); font-size: 1.15rem; max-width: 640px; margin: 0 auto 30px; }
+  .cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px; padding: 13px 22px; border-radius: 10px;
+    font-weight: 600; border: 1px solid var(--border); background: var(--card); color: var(--text);
+  }
+  .btn:hover { text-decoration: none; border-color: var(--muted); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #1a0d06; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .btn small { font-weight: 400; opacity: .75; }
+  .meta { color: var(--muted); font-size: .9rem; margin-top: 16px; }
+
+  .shot { margin: 44px auto 0; border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden;
+          box-shadow: 0 30px 80px rgba(0,0,0,.55); max-width: 1000px; }
+
+  section { padding-block: 72px; }
+  section h2 { font-size: clamp(1.6rem, 3.2vw, 2.2rem); margin: 0 0 10px; letter-spacing: -0.01em; }
+  section p.sub { color: var(--muted); margin: 0 0 36px; max-width: 680px; }
+
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 18px; counter-reset: s; }
+  .step { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .step::before {
+    counter-increment: s; content: counter(s); display: inline-grid; place-items: center;
+    width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #1a0d06; font-weight: 700; margin-bottom: 12px;
+  }
+  .step h3 { margin: 0 0 6px; font-size: 1.1rem; }
+  .step p { margin: 0; color: var(--muted); }
+
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 18px; }
+  .feature { padding: 24px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--border); }
+  .feature h3 { margin: 0 0 8px; font-size: 1.1rem; display: flex; gap: 10px; align-items: center; }
+  .feature h3 span { color: var(--accent); font-size: 1.2rem; }
+  .feature p { margin: 0; color: var(--muted); }
+
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
+  .split img { border-radius: var(--radius); border: 1px solid var(--border); }
+  @media (max-width: 820px) { .split { grid-template-columns: 1fr; } }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); }
+  table { width: 100%; border-collapse: collapse; min-width: 520px; }
+  th, td { text-align: left; padding: 12px 18px; border-bottom: 1px solid var(--border); }
+  th { background: var(--panel); color: var(--muted); font-weight: 600; font-size: .85rem; text-transform: uppercase; letter-spacing: .04em; }
+  tr:last-child td { border-bottom: 0; }
+  td:last-child { color: var(--muted); }
+  td .tag { font-size: .75rem; color: var(--muted); border: 1px solid var(--border); border-radius: 99px; padding: 1px 8px; margin-left: 6px; white-space: nowrap; }
+
+  pre { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; overflow-x: auto; }
+  pre code { background: none; border: 0; padding: 0; }
+
+  .faq details { border-bottom: 1px solid var(--border); padding: 16px 0; }
+  .faq summary { cursor: pointer; font-weight: 600; }
+  .faq details p { color: var(--muted); margin: 10px 0 0; }
+
+  footer { border-top: 1px solid var(--border); padding-block: 36px 48px; color: var(--muted); font-size: .9rem; }
+  footer .row { display: flex; gap: 20px; flex-wrap: wrap; justify-content: space-between; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="#"><img src="img/icon.png" alt="">USB Forge</a>
+    <div class="links">
+      <a href="#how">How it works</a>
+      <a href="#catalog">Catalog</a>
+      <a href="#trust">Verification</a>
+      <a href="https://github.com/SkippyNet/usb-forge">GitHub</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <h1>One USB stick.<br>Every tool you need, <em>verified</em>.</h1>
+    <p class="lead">USB Forge builds a multi-boot USB drive with the latest Linux installers and rescue tools.
+      Each one is downloaded from its official project and checked against the SHA-256 that project publishes.</p>
+    <div class="cta">
+      <a class="btn primary" id="dl-win" href="https://github.com/SkippyNet/usb-forge/releases/latest/download/usb-forge-windows-x86_64.exe">
+        Download for Windows <small>10/11 · x64</small></a>
+      <a class="btn" id="dl-linux" href="https://github.com/SkippyNet/usb-forge/releases/latest/download/usb-forge-linux-x86_64">
+        Download for Linux <small>x86_64</small></a>
+    </div>
+    <p class="meta">Free and open source (MIT) · <a href="https://github.com/SkippyNet/usb-forge/releases/latest">Release notes &amp; checksums</a></p>
+    <div class="shot"><img src="img/app.png" width="1422" height="853" alt="USB Forge: choose a USB drive, format options, and a list of operating systems and tools to add"></div>
+  </header>
+
+  <section id="how">
+    <h2>Three steps, no ISO hunting</h2>
+    <p class="sub">No more visiting ten websites, guessing which version is current and skipping the checksum check.</p>
+    <div class="steps">
+      <div class="step"><h3>Pick a USB drive</h3><p>Only USB disks are listed. The disk your system runs from is always hidden.</p></div>
+      <div class="step"><h3>Tick what you want</h3><p>Installers, rescue and backup tools. USB Forge looks up the latest release of each.</p></div>
+      <div class="step"><h3>Build</h3><p>Everything is downloaded and verified first. Only then is the drive formatted and filled.</p></div>
+    </div>
+  </section>
+
+  <section id="trust">
+    <h2>Built so you can trust what boots</h2>
+    <p class="sub">A rescue stick is only useful if what's on it is genuine and the right disk got erased.</p>
+    <div class="features">
+      <div class="feature"><h3><span>✔</span>Every ISO verified</h3>
+        <p>Each download is checked against the SHA-256 published by its own project, then hashed again after it's copied to the drive.</p></div>
+      <div class="feature"><h3><span>↻</span>Always the latest</h3>
+        <p>USB Forge asks each project for its current release, so your stick is never stale. Rebuild it any time.</p></div>
+      <div class="feature"><h3><span>⛨</span>Hard to wipe the wrong disk</h3>
+        <p>System and internal disks are hidden, the target is re-checked right before formatting, and you type <code>ERASE</code> to confirm.</p></div>
+      <div class="feature"><h3><span>✎</span>Signed updates</h3>
+        <p>The app updates itself only when a release's Ed25519 signature matches the key compiled into it.</p></div>
+      <div class="feature"><h3><span>⇣</span>Saved downloads</h3>
+        <p>ISOs are cached and re-verified before reuse, and interrupted downloads resume. Refreshing a stick only fetches what changed.</p></div>
+      <div class="feature"><h3><span>⌂</span>Least privilege on Linux</h3>
+        <p>Runs as your normal user and asks for your password (polkit) only for the format step.</p></div>
+    </div>
+  </section>
+
+  <section id="catalog">
+    <h2>What goes on the stick</h2>
+    <p class="sub">Every item comes from its official project, pinned to a checksum that project publishes.
+      Want something else? <a href="https://github.com/SkippyNet/usb-forge/issues/new?template=catalog_request.yml">Suggest it</a>.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Software</th><th>Checksum source</th></tr></thead>
+        <tbody>
+          <tr><td>Ubuntu Desktop &amp; Server <span class="tag">LTS or latest</span></td><td>releases.ubuntu.com SHA256SUMS</td></tr>
+          <tr><td>Fedora Workstation</td><td>fedoraproject.org releases.json</td></tr>
+          <tr><td>Linux Mint Cinnamon</td><td>kernel.org mirror sha256sum.txt</td></tr>
+          <tr><td>Debian netinst</td><td>cdimage.debian.org SHA256SUMS</td></tr>
+          <tr><td>Hiren's BootCD PE <span class="tag">rescue</span></td><td>hirensbootcd.org download page</td></tr>
+          <tr><td>SystemRescue <span class="tag">rescue</span></td><td>system-rescue.org .sha256</td></tr>
+          <tr><td>Rescuezilla <span class="tag">backup</span></td><td>GitHub release SHA256SUM</td></tr>
+          <tr><td>Clonezilla Live <span class="tag">backup</span></td><td>clonezilla.org CHECKSUMS.TXT</td></tr>
+          <tr><td>GParted Live <span class="tag">partitioning</span></td><td>gparted.org CHECKSUMS.TXT</td></tr>
+          <tr><td>Memtest86+ <span class="tag">diagnostics</span></td><td>memtest.org sha256sum.txt</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="split">
+      <div>
+        <h2>A boot menu that's yours</h2>
+        <p class="sub" style="margin-bottom:16px">Boot any PC from the stick (usually F12, F11, F9 or Esc at power-on) and pick from every
+          ISO on the drive. Works on UEFI and legacy BIOS.</p>
+        <p class="sub" style="margin:0">Need something extra? Copy any ISO onto the drive in your file manager. It shows up in the menu
+          next time. The rest of the drive still works for ordinary files.</p>
+      </div>
+      <img src="img/boot-menu.png" width="1024" height="768" alt="Preview of the USB Forge boot menu listing ISO files">
+    </div>
+  </section>
+
+  <section id="linux">
+    <h2>Get started</h2>
+    <div class="split" style="align-items:start">
+      <div>
+        <h3>Windows 10/11</h3>
+        <p class="sub" style="margin-bottom:0">Run <code>usb-forge-windows-x86_64.exe</code> and click <b>Restart as administrator</b> when you're
+          ready to format. If SmartScreen says "Windows protected your PC", choose <b>More info → Run anyway</b>.</p>
+      </div>
+      <div>
+        <h3>Linux</h3>
+        <pre><code>chmod +x usb-forge-linux-x86_64
+./usb-forge-linux-x86_64</code></pre>
+        <p class="sub" style="margin:0">Works on Ubuntu, Debian, Fedora, Linux Mint, Arch and other mainstream desktops
+          (needs <code>udisks2</code> and <code>polkit</code>, installed by default).</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="faq">
+    <h2>Questions</h2>
+    <details><summary>Is it really free?</summary>
+      <p>Yes. USB Forge is MIT-licensed, has no ads and sends no telemetry. It only contacts the catalog projects' sites and official mirrors, and GitHub to check for updates.</p></details>
+    <details><summary>Does it work with Secure Boot?</summary>
+      <p>The app tells you when Secure Boot is on. Some tools only start with it turned off; the
+        <a href="https://github.com/SkippyNet/usb-forge/blob/main/docs/SECURE_BOOT.md">vendor guide</a> shows how for common PCs.</p></details>
+    <details><summary>My USB drive isn't listed.</summary>
+      <p>Only USB disks the system isn't using are shown. Run <code>usb-forge --list-disks</code> to see every disk and why it was hidden.</p></details>
+    <details><summary>How do I check a download myself?</summary>
+      <p>Each release lists SHA-256 checksums in <code>SHA256SUMS.txt</code> and Ed25519 signatures next to the binaries. See
+        <a href="https://github.com/SkippyNet/usb-forge/blob/main/SECURITY.md">SECURITY.md</a>.</p></details>
+  </section>
+
+  <footer>
+    <div class="row">
+      <span>USB Forge · MIT License · <a href="https://github.com/SkippyNet/usb-forge">Source on GitHub</a></span>
+      <span>Built on open-source projects. <a href="https://github.com/SkippyNet/usb-forge#credits">Credits</a></span>
+    </div>
+  </footer>
+</div>
+<script>
+  // Put the visitor's OS first.
+  (function () {
+    var p = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+    if (/linux/i.test(p) && !/android/i.test(navigator.userAgent)) {
+      var win = document.getElementById("dl-win"), lin = document.getElementById("dl-linux");
+      win.classList.remove("primary"); lin.classList.add("primary");
+      lin.parentNode.insertBefore(lin, win);
+    }
+  })();
+</script>
+</body>
+</html>

@@ -12,7 +12,9 @@ then adds the operating systems and tools you pick, each one downloaded from its
 and verified against that project's published SHA-256.
 
 Runs on **Windows 10/11** and **Linux** (Ubuntu, Debian, Fedora, Linux Mint, Arch and other
-mainstream desktops).
+mainstream desktops). Website: **[skippynet.github.io/usb-forge](https://skippynet.github.io/usb-forge/)**
+
+<p align="center"><img src="assets/screenshots/app.png" width="860" alt="USB Forge: choose a USB drive, format options, and the list of operating systems and tools"></p>
 
 ## Download
 
@@ -80,6 +82,10 @@ Boot a PC from the finished drive (usually by pressing a key such as F12, F11, F
 power-on) and a USB Forge menu lists every ISO on the drive. Pick one and press Enter. To add
 more later, copy any ISO onto the drive in Explorer or your file manager; it appears in the menu
 on the next boot.
+
+<p align="center"><img src="assets/screenshots/boot-menu.png" width="640" alt="Preview of the USB Forge boot menu listing the ISOs on the drive"></p>
+
+The image is a preview rendered from the theme files (`assets/screenshots/make-boot-preview.ps1`).
 
 ## Saved downloads
 
