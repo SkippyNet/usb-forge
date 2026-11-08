@@ -43,8 +43,11 @@ const FILES: &[(&str, &[u8])] = theme_files![
     "terminal_box_sw.png",
 ];
 
-/// Plugin config: use the theme in graphical mode. The boot loader's own version line stays,
-/// recoloured to match and kept in the bottom-left corner.
+/// Background colour at the bottom of `background.png`. The boot loader always prints its own
+/// name and version line; drawing it in this colour hides it.
+const HIDDEN_TEXT_COLOR: &str = "#0f1117";
+
+/// Plugin config: use the theme in graphical mode, with the boot loader's version line hidden.
 fn plugin_config() -> String {
     format!(
         r##"{{
@@ -53,7 +56,7 @@ fn plugin_config() -> String {
         "display_mode": "GUI",
         "ventoy_left": "5%",
         "ventoy_top": "95%",
-        "ventoy_color": "#8b93a7"
+        "ventoy_color": "{HIDDEN_TEXT_COLOR}"
     }}
 }}
 "##
@@ -84,6 +87,13 @@ mod tests {
         let file = v["theme"]["file"].as_str().unwrap();
         let name = file.strip_prefix(&format!("/{THEME_DIR}/")).unwrap();
         assert!(FILES.iter().any(|(n, _)| *n == name));
+        assert_eq!(v["theme"]["ventoy_color"], HIDDEN_TEXT_COLOR);
+        assert!(
+            std::str::from_utf8(FILES[0].1)
+                .unwrap()
+                .contains(&format!("desktop-color: \"{HIDDEN_TEXT_COLOR}\"")),
+            "hidden text colour must match the theme background"
+        );
     }
 
     #[test]
