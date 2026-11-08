@@ -2,10 +2,10 @@
 Type=Application
 Name=USB Forge
 GenericName=Multi-boot USB Builder
-Comment=Build a verified multi-boot USB drive with Ventoy
+Comment=Build a verified multi-boot USB drive
 Exec=usb-forge
 Icon=usb-forge
 Terminal=false
 Categories=System;Utility;
-Keywords=usb;boot;ventoy;iso;ubuntu;
+Keywords=usb;boot;multiboot;iso;ubuntu;
 StartupWMClass=usb-forge

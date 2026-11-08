@@ -92,9 +92,9 @@ fn resolve_all() {
     match ventoy::latest_release() {
         Ok(r) => println!(
             "{:<22} {:<12} {}\n{:<22} sha256 {}",
-            "Ventoy", r.version, r.url, "", r.sha256
+            "Boot loader", r.version, r.url, "", r.sha256
         ),
-        Err(e) => println!("{:<22} ERROR {e}", "Ventoy"),
+        Err(e) => println!("{:<22} ERROR {e}", "Boot loader"),
     }
     for t in catalog::TOOLS {
         let channels: &[catalog::Channel] = if t.has_channel {

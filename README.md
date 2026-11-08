@@ -2,9 +2,9 @@
 
 # USB Forge
 
-Build a multi-boot USB thumb drive in a few clicks. USB Forge installs
-[Ventoy](https://www.ventoy.net), then adds the operating systems and tools you pick, each one
-downloaded from its official project and verified against that project's published SHA-256.
+Build a multi-boot USB thumb drive in a few clicks. USB Forge sets up a boot menu on the drive,
+then adds the operating systems and tools you pick, each one downloaded from its official project
+and verified against that project's published SHA-256.
 
 Runs on **Windows 10/11** and **Linux** (Ubuntu, Debian, Fedora, Linux Mint, Arch and other
 mainstream desktops).
@@ -101,6 +101,12 @@ To regenerate the icon on Windows, run `powershell -File assets/make-icon.ps1`.
 2. Tag the merge commit: `git tag v0.2.0 && git push origin v0.2.0` (only admins can push `v*` tags).
 3. Approve the **release** environment deployment in the Actions run. CI builds both binaries,
    signs them and publishes the GitHub release.
+
+## Third-party software
+
+The boot loader installed on the drive is currently [Ventoy](https://www.ventoy.net) (GPLv3),
+downloaded from its official releases and verified against its published SHA-256. USB Forge
+doesn't bundle or modify it. A USB Forge boot menu is in development to replace it.
 
 ## Contributing
 

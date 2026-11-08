@@ -6,6 +6,9 @@ use std::sync::atomic::AtomicBool;
 use crate::net::{self, find_sha256, get_text};
 use crate::platform;
 
+/// Volume label of the data partition that holds the ISOs.
+pub const DATA_LABEL: &str = "USBFORGE";
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 // Ventoy's Linux installer only formats exFAT, so the other variants exist only on Windows.
 #[cfg_attr(target_os = "linux", allow(dead_code))]
@@ -52,13 +55,13 @@ pub struct Release {
 pub fn latest_release() -> Result<Release, String> {
     let json = get_text("https://api.github.com/repos/ventoy/Ventoy/releases/latest")?;
     let rel: serde_json::Value =
-        serde_json::from_str(&json).map_err(|e| format!("Ventoy release info: {e}"))?;
+        serde_json::from_str(&json).map_err(|e| format!("Boot loader release info: {e}"))?;
     let tag = rel["tag_name"]
         .as_str()
-        .ok_or("Ventoy release has no tag.")?;
+        .ok_or("Boot loader release has no tag.")?;
     let assets = rel["assets"]
         .as_array()
-        .ok_or("Ventoy release has no assets.")?;
+        .ok_or("Boot loader release has no assets.")?;
     let asset_url = |pred: &dyn Fn(&str) -> bool| {
         assets.iter().find_map(|a| {
             let name = a["name"].as_str()?;
@@ -67,11 +70,11 @@ pub fn latest_release() -> Result<Release, String> {
         })
     };
     let (file_name, url) = asset_url(&|n| n.ends_with(platform::VENTOY_ASSET_SUFFIX))
-        .ok_or("Ventoy package for this OS not found in the release.")?;
+        .ok_or("Boot loader package for this OS not found in the release.")?;
     let (_, sums_url) =
-        asset_url(&|n| n == "sha256.txt").ok_or("Ventoy release has no sha256.txt.")?;
+        asset_url(&|n| n == "sha256.txt").ok_or("Boot loader release has no checksum list.")?;
     let sums = get_text(&sums_url)?;
-    let sha256 = find_sha256(&sums, &file_name).ok_or("Ventoy checksum not found.")?;
+    let sha256 = find_sha256(&sums, &file_name).ok_or("Boot loader checksum not found.")?;
     Ok(Release {
         version: tag.trim_start_matches('v').to_string(),
         url,

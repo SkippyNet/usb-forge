@@ -13,7 +13,7 @@ use std::time::Duration;
 use serde_json::Value;
 
 use crate::disks::Disk;
-use crate::ventoy::FileSystem;
+use crate::ventoy::{DATA_LABEL, FileSystem};
 
 pub const OS_NAME: &str = "Linux";
 pub const VENTOY_ASSET_SUFFIX: &str = "-linux.tar.gz";
@@ -225,7 +225,7 @@ pub fn extract_ventoy(archive: &Path, dir: &Path) -> Result<(), String> {
     if status.success() {
         Ok(())
     } else {
-        Err(format!("Extracting Ventoy failed ({status})"))
+        Err(format!("Extracting the boot loader failed ({status})"))
     }
 }
 
@@ -252,8 +252,9 @@ pub fn install_ventoy(
     let dir = ventoy_dir.to_string_lossy();
     let dev = shell_quote(&disk.id);
     let script = format!(
-        "set -e\ncd {dir}\nfor p in $(lsblk -lnpo NAME {dev} | tail -n +2); do umount \"$p\" 2>/dev/null || true; done\nprintf 'y\\ny\\n' | sh ./Ventoy2Disk.sh -I {gpt}{dev}\n",
+        "set -e\ncd {dir}\nfor p in $(lsblk -lnpo NAME {dev} | tail -n +2); do umount \"$p\" 2>/dev/null || true; done\nprintf 'y\\ny\\n' | sh ./Ventoy2Disk.sh -I -L {label} {gpt}{dev}\n",
         dir = shell_quote(&dir),
+        label = shell_quote(DATA_LABEL),
         gpt = if gpt { "-g " } else { "" },
     );
     let mut cmd = if is_root() {
@@ -290,7 +291,7 @@ pub fn install_ventoy(
         Some(0) => {}
         _ => {
             return Err(format!(
-                "Ventoy install failed ({}).\n{}",
+                "Boot loader install failed ({}).\n{}",
                 out.status,
                 tail(&log)
             ));
@@ -300,7 +301,9 @@ pub fn install_ventoy(
     let _ = Command::new("udevadm").arg("settle").status();
     for _ in 0..15 {
         if let Ok(parts) = partitions(&disk.id)
-            && parts.first().is_some_and(|(_, label, _)| label == "Ventoy")
+            && parts
+                .first()
+                .is_some_and(|(_, label, _)| label == DATA_LABEL)
         {
             progress(1.0);
             return Ok(());
@@ -308,7 +311,7 @@ pub fn install_ventoy(
         std::thread::sleep(Duration::from_secs(1));
     }
     Err(format!(
-        "Ventoy did not create its partition.\n{}",
+        "The boot loader did not create its data partition.\n{}",
         tail(&log)
     ))
 }
@@ -318,13 +321,13 @@ fn tail(log: &str) -> String {
     lines[lines.len().saturating_sub(15)..].join("\n")
 }
 
-/// Mount Ventoy's data partition (as the desktop user, via udisks2) and return its path.
+/// Mount the data partition (as the desktop user, via udisks2) and return its path.
 pub fn data_partition(disk: &Disk) -> Result<PathBuf, String> {
     for _ in 0..20 {
         if let Some((part, label, mounts)) = partitions(&disk.id)?.into_iter().next() {
-            if label != "Ventoy" {
+            if label != DATA_LABEL {
                 return Err(format!(
-                    "Partition {part} is labelled '{label}', expected 'Ventoy'."
+                    "Partition {part} is labelled '{label}', expected '{DATA_LABEL}'."
                 ));
             }
             if let Some(m) = mounts.first() {
@@ -336,7 +339,7 @@ pub fn data_partition(disk: &Disk) -> Result<PathBuf, String> {
         }
         std::thread::sleep(Duration::from_secs(1));
     }
-    Err("Could not mount the new Ventoy partition (is udisks2 running?).".into())
+    Err("Could not mount the new data partition (is udisks2 running?).".into())
 }
 
 // ---- self-update -------------------------------------------------------------------------

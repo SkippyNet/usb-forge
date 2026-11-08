@@ -17,7 +17,7 @@ instead. We aim to reply within 7 days.
 | Tags | Only repository admins can create, move or delete `v*` tags. |
 | Signing | The Ed25519 release key lives only in the protected `release` environment. That environment needs maintainer approval and only accepts deployments from `v*` tags. |
 | Updates | The app installs an update only if the binary's signature verifies against the public key **compiled into the app** (`keys/release-signing.pub`). The signature covers the version and asset name, so tampered binaries, replayed old releases and cross-platform swaps are all rejected, even if the GitHub repository itself is compromised. |
-| Downloads | Every ISO and Ventoy package is checked against the SHA-256 published by its own project before the drive is touched. |
+| Downloads | Every ISO and the boot loader package are checked against the SHA-256 published by its own project before the drive is touched. |
 | Dependencies | `Cargo.lock` is committed, builds use `--locked`, `cargo audit` runs on every PR, and Dependabot proposes updates as reviewable PRs. |
 
 ## Verifying a release manually

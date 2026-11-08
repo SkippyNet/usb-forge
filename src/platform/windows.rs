@@ -8,7 +8,7 @@ use std::time::Duration;
 use serde::Deserialize;
 
 use crate::disks::Disk;
-use crate::ventoy::FileSystem;
+use crate::ventoy::{DATA_LABEL, FileSystem};
 
 pub const OS_NAME: &str = "Windows";
 pub const VENTOY_ASSET_SUFFIX: &str = "-windows.zip";
@@ -17,6 +17,8 @@ pub const UPDATE_ASSET: &str = "usb-forge-windows-x86_64.exe";
 pub const SUPPORTED_FS: &[FileSystem] = &[FileSystem::ExFat, FileSystem::Ntfs, FileSystem::Fat32];
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+/// Label the upstream boot loader installer gives the data partition; renamed to `DATA_LABEL`.
+const INSTALLER_LABEL: &str = "Ventoy";
 
 /// A `Command` that never flashes a console window.
 pub fn hidden(program: &str) -> Command {
@@ -178,11 +180,11 @@ pub fn all_disks() -> Result<Vec<Disk>, String> {
 // ---- Ventoy ------------------------------------------------------------------------------
 
 pub fn extract_ventoy(archive: &Path, dir: &Path) -> Result<(), String> {
-    let file =
-        std::fs::File::open(archive).map_err(|e| format!("Cannot open Ventoy package: {e}"))?;
+    let file = std::fs::File::open(archive)
+        .map_err(|e| format!("Cannot open the boot loader package: {e}"))?;
     zip::ZipArchive::new(file)
         .and_then(|mut z| z.extract(dir))
-        .map_err(|e| format!("Cannot extract Ventoy: {e}"))
+        .map_err(|e| format!("Cannot extract the boot loader: {e}"))
 }
 
 /// Format the disk and install Ventoy on it. This ERASES the disk.
@@ -216,7 +218,7 @@ pub fn install_ventoy(
         .args(&args)
         .current_dir(ventoy_dir)
         .spawn()
-        .map_err(|e| format!("Could not start Ventoy2Disk: {e}"))?;
+        .map_err(|e| format!("Could not start the boot loader installer: {e}"))?;
     loop {
         if let Some(status) = child.try_wait().map_err(|e| e.to_string())? {
             let done = std::fs::read_to_string(&done_file).unwrap_or_default();
@@ -228,7 +230,7 @@ pub fn install_ventoy(
             let tail: Vec<&str> = log.lines().rev().take(12).collect();
             let tail: Vec<&str> = tail.into_iter().rev().collect();
             return Err(format!(
-                "Ventoy install failed (exit {status}, result '{}').\n{}",
+                "Boot loader install failed (exit {status}, result '{}').\n{}",
                 done.trim(),
                 tail.join("\n")
             ));
@@ -242,7 +244,8 @@ pub fn install_ventoy(
     }
 }
 
-/// Locate (assigning if needed) the drive letter of Ventoy's data partition.
+/// Locate (assigning if needed) the drive letter of the data partition, and give it the
+/// USB Forge label (the installer names it after itself by default).
 pub fn data_partition(disk: &Disk) -> Result<PathBuf, String> {
     let number: u32 = disk
         .id
@@ -258,6 +261,10 @@ if ($p -and [int][char]$p.DriveLetter -eq 0) {{
   $p = Get-Partition -DiskNumber {number} -PartitionNumber 1
 }}
 $v = $p | Get-Volume
+if ($v -and $v.FileSystemLabel -eq '{INSTALLER_LABEL}') {{
+  Set-Volume -DriveLetter $p.DriveLetter -NewFileSystemLabel '{DATA_LABEL}' | Out-Null
+  $v = $p | Get-Volume
+}}
 if ($p -and [int][char]$p.DriveLetter -gt 0) {{ "$($p.DriveLetter)|$($v.FileSystemLabel)" }}
 "#
     );
@@ -265,9 +272,9 @@ if ($p -and [int][char]$p.DriveLetter -gt 0) {{ "$($p.DriveLetter)|$($v.FileSyst
         if let Ok(out) = powershell(&script) {
             let parts: Vec<&str> = out.trim().split('|').collect();
             if parts.len() == 2 && parts[0].len() == 1 {
-                if !parts[1].eq_ignore_ascii_case("Ventoy") {
+                if !parts[1].eq_ignore_ascii_case(DATA_LABEL) {
                     return Err(format!(
-                        "Partition 1 on disk {number} is labelled '{}', expected 'Ventoy'.",
+                        "Partition 1 on disk {number} is labelled '{}', expected '{DATA_LABEL}'.",
                         parts[1]
                     ));
                 }
@@ -276,7 +283,7 @@ if ($p -and [int][char]$p.DriveLetter -gt 0) {{ "$($p.DriveLetter)|$($v.FileSyst
         }
         std::thread::sleep(Duration::from_secs(1));
     }
-    Err("Windows did not mount the new Ventoy partition.".into())
+    Err("Windows did not mount the new data partition.".into())
 }
 
 // ---- self-update -------------------------------------------------------------------------
