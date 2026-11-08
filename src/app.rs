@@ -272,7 +272,7 @@ impl UsbForgeApp {
             }
         }
         if let Some(disk) = self.selected_disk()
-            && total > disk.size.saturating_sub(64 * 1024 * 1024)
+            && total > disk.size.saturating_sub(disks::RESERVED_BYTES)
         {
             problems.push(format!(
                 "The selection needs {} but the drive holds {}.",
@@ -530,31 +530,23 @@ impl UsbForgeApp {
     fn tool_row(&mut self, ui: &mut egui::Ui, tool: &catalog::ToolInfo) {
         let mut on = self.chosen.get(&tool.id).copied().unwrap_or(false);
         let mut channel = self.channel(tool.id);
-        let lookup_text = {
+        let max_file = self.fs.max_file();
+        let (lookup_text, saved, too_big) = {
             let map = self.lookups.lock().ok();
             match map.as_ref().and_then(|m| m.get(&(tool.id, channel))) {
-                Some(Lookup::Ready(r)) => Some(Ok(format!(
-                    "{}  ·  {}",
-                    r.version,
-                    r.size.map(human_size).unwrap_or_else(|| "size ?".into())
-                ))),
-                Some(Lookup::Failed(e)) => Some(Err(e.clone())),
-                Some(Lookup::Loading) | None => None,
+                Some(Lookup::Ready(r)) => (
+                    Some(Ok(format!(
+                        "{}  ·  {}",
+                        r.version,
+                        r.size.map(human_size).unwrap_or_else(|| "size ?".into())
+                    ))),
+                    cache_state(r),
+                    r.size.zip(max_file).is_some_and(|(s, max)| s > max),
+                ),
+                Some(Lookup::Failed(e)) => (Some(Err(e.clone())), CacheState::Missing, false),
+                Some(Lookup::Loading) | None => (None, CacheState::Missing, false),
             }
         };
-        let saved = {
-            let map = self.lookups.lock().ok();
-            match map.as_ref().and_then(|m| m.get(&(tool.id, channel))) {
-                Some(Lookup::Ready(r)) => cache_state(r),
-                _ => CacheState::Missing,
-            }
-        };
-        let too_big = matches!(&lookup_text, Some(Ok(_)))
-            && self.fs.max_file().is_some_and(|max| {
-                self.lookups.lock().ok().is_some_and(|m| {
-                    matches!(m.get(&(tool.id, channel)), Some(Lookup::Ready(r)) if r.size.is_some_and(|s| s > max))
-                })
-            });
 
         let (fill, stroke) = if on {
             (CARD_HOVER, ACCENT)

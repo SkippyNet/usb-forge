@@ -21,6 +21,9 @@ pub struct Disk {
     pub mounts: Vec<String>,
 }
 
+/// Space kept free on the drive for the boot partition and filesystem overhead.
+pub const RESERVED_BYTES: u64 = 64 * 1024 * 1024;
+
 /// Anything larger than this is more likely an external hard drive than a thumb drive.
 pub const THUMB_DRIVE_MAX: u64 = 256 * 1024 * 1024 * 1024;
 

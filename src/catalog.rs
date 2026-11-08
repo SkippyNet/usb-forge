@@ -1,5 +1,5 @@
 //! The software catalog. Every entry is resolved live from its official source, and every
-//! download is inned to a SHA-256 published by that project.
+//! download is pinned to a SHA-256 published by that project.
 
 use regex::Regex;
 
@@ -403,7 +403,9 @@ fn rescuezilla() -> Result<Resolved, String> {
     ))
 }
 
-fn sums_after_sha256_marker(text: &str, name_re: &str) -> Option<(String, String, String)> {
+/// First SHA-256 line in a checksum listing whose file name matches `name_re`. Returns
+/// (hash, file name, first capture group). Other hash types are skipped by their length.
+fn sha256_line_matching(text: &str, name_re: &str) -> Option<(String, String, String)> {
     let re = Regex::new(name_re).expect("valid regex");
     text.lines().find_map(|line| {
         let mut parts = line.split_whitespace();
@@ -422,9 +424,8 @@ fn sums_after_sha256_marker(text: &str, name_re: &str) -> Option<(String, String
 
 fn clonezilla() -> Result<Resolved, String> {
     let sums = get_text("https://clonezilla.org/downloads/stable/data/CHECKSUMS.TXT")?;
-    let (hash, name, v) =
-        sums_after_sha256_marker(&sums, r"^clonezilla-live-([\d.\-]+)-amd64\.iso$")
-            .ok_or("Clonezilla checksum not found.")?;
+    let (hash, name, v) = sha256_line_matching(&sums, r"^clonezilla-live-([\d.\-]+)-amd64\.iso$")
+        .ok_or("Clonezilla checksum not found.")?;
     let url = format!(
         "https://downloads.sourceforge.net/project/clonezilla/clonezilla_live_stable/{v}/{name}"
     );
@@ -433,7 +434,7 @@ fn clonezilla() -> Result<Resolved, String> {
 
 fn gparted() -> Result<Resolved, String> {
     let sums = get_text("https://gparted.org/gparted-live/stable/CHECKSUMS.TXT")?;
-    let (hash, name, v) = sums_after_sha256_marker(&sums, r"^gparted-live-([\d.\-]+)-amd64\.iso$")
+    let (hash, name, v) = sha256_line_matching(&sums, r"^gparted-live-([\d.\-]+)-amd64\.iso$")
         .ok_or("GParted checksum not found.")?;
     let url = format!("https://downloads.sourceforge.net/gparted/{name}");
     Ok(Resolved::new(v, url, name, hash))

@@ -49,7 +49,8 @@ pub fn remote_size(url: &str) -> Option<u64> {
 
 pub type Progress<'a> = &'a mut dyn FnMut(u64, Option<u64>);
 
-fn cancelled(cancel: &AtomicBool) -> Result<(), String> {
+/// `Err("Cancelled.")` once the user has asked to stop.
+pub fn cancelled(cancel: &AtomicBool) -> Result<(), String> {
     if cancel.load(Ordering::Relaxed) {
         Err("Cancelled.".into())
     } else {

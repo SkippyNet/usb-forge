@@ -4,9 +4,10 @@
 //! drive is touched, and the target disk is re-verified immediately before formatting.
 
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex};
 
+use crate::boot_theme;
 use crate::catalog::{self, Channel, Resolved, ToolId};
 use crate::disks::{self, Disk};
 use crate::net;
@@ -14,7 +15,6 @@ use crate::platform;
 use crate::sys::human_size;
 use crate::ventoy::{self, FileSystem};
 
-#[derive(Clone)]
 pub struct Plan {
     pub disk: Disk,
     pub tools: Vec<(ToolId, Channel)>,
@@ -152,11 +152,7 @@ impl Ctx {
         }
     }
     fn check_cancel(&self) -> Result<(), String> {
-        if self.cancel.load(Ordering::Relaxed) {
-            Err("Cancelled.".into())
-        } else {
-            Ok(())
-        }
+        net::cancelled(&self.cancel)
     }
 }
 
@@ -200,7 +196,7 @@ fn run(plan: &Plan, ctx: &Ctx) -> Result<String, String> {
         }
     }
     let total: u64 = resolved.iter().filter_map(|(_, r)| r.size).sum();
-    let usable = plan.disk.size.saturating_sub(64 * 1024 * 1024);
+    let usable = plan.disk.size.saturating_sub(disks::RESERVED_BYTES);
     if total > usable {
         return Err(format!(
             "The selected software needs {} but the drive only holds about {}.",
@@ -257,7 +253,7 @@ fn run(plan: &Plan, ctx: &Ctx) -> Result<String, String> {
         ventoy_rel.version,
         disk.display_id()
     ));
-    ctx.detail("Waiting for Windows to mount the new partition...");
+    ctx.detail("Waiting for the new partition to mount...");
     let root = platform::data_partition(&disk)?;
     ctx.log(format!("Data partition mounted at {}", root.display()));
     ctx.finish(step_format);
@@ -267,6 +263,11 @@ fn run(plan: &Plan, ctx: &Ctx) -> Result<String, String> {
     for (id, r) in &resolved {
         let name = catalog::info(*id).name;
         copy_to_usb(ctx, &cache, &root, name, r)?;
+    }
+    // Cosmetic only: without it the drive still boots, just with the stock menu look.
+    match boot_theme::install(&root) {
+        Ok(()) => ctx.log("USB Forge boot menu theme installed"),
+        Err(e) => ctx.log(format!("WARNING: boot menu theme not installed: {e}")),
     }
     ctx.finish(step_copy);
     ctx.log(format!("All done. {} is ready to boot.", root.display()));
