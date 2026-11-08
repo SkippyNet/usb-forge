@@ -149,9 +149,15 @@ fn is_removable_mount(m: &str) -> bool {
 }
 
 pub fn all_disks() -> Result<Vec<Disk>, String> {
-    let v = lsblk(None)?;
-    let devices = v["blockdevices"].as_array().cloned().unwrap_or_default();
-    Ok(devices
+    Ok(parse_disks(&lsblk(None)?))
+}
+
+/// Turn `lsblk -J` output into the disk list (whole disks only).
+fn parse_disks(v: &Value) -> Vec<Disk> {
+    v["blockdevices"]
+        .as_array()
+        .map(Vec::as_slice)
+        .unwrap_or_default()
         .iter()
         .filter(|d| text(&d["type"]) == "disk")
         .map(|d| {
@@ -185,10 +191,10 @@ pub fn all_disks() -> Result<Vec<Disk>, String> {
                 mounts,
             }
         })
-        .collect())
+        .collect()
 }
 
-/// Device paths of the disk's partitions, in order.
+/// The disk's partitions, in order: (device path, label, mount points).
 fn partitions(disk: &str) -> Result<Vec<(String, String, Vec<String>)>, String> {
     let v = lsblk(Some(disk))?;
     let dev = &v["blockdevices"][0];
@@ -376,28 +382,12 @@ mod tests {
           {"name":"sdc","path":"/dev/sdc","size":2000000000000,"tran":"usb","type":"disk","model":"Backup","vendor":"WD","mountpoints":[null],"pttype":"gpt",
            "children":[{"name":"sdc1","path":"/dev/sdc1","type":"part","mountpoints":["[SWAP]"]}]}
         ]}"#;
-        let v: Value = serde_json::from_str(json).unwrap();
-        let disks: Vec<Disk> = v["blockdevices"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|d| {
-                let mut mounts = Vec::new();
-                collect_mounts(d, &mut mounts);
-                Disk {
-                    id: text(&d["path"]),
-                    name: text(&d["model"]),
-                    bus: text(&d["tran"]).to_uppercase(),
-                    size: number(&d["size"]),
-                    is_boot: mounts.iter().any(|m| m == "/boot/efi"),
-                    is_system: mounts.iter().any(|m| !is_removable_mount(m)),
-                    is_os_disk: mounts.iter().any(|m| m == "/"),
-                    style: String::new(),
-                    mounts,
-                }
-            })
-            .collect();
+        let disks = parse_disks(&serde_json::from_str(json).unwrap());
+        assert_eq!(disks.len(), 3);
+        assert!(disks[0].is_boot && disks[0].is_os_disk);
         assert!(!disks[0].is_safe_target(), "internal NVMe must be hidden");
+        assert_eq!(disks[1].name, "General UDisk");
+        assert_eq!(disks[1].style, "MBR");
         assert!(
             disks[1].is_safe_target(),
             "USB stick mounted under /media is a target"

@@ -12,6 +12,7 @@
 compile_error!("USB Forge supports Windows and Linux.");
 
 mod app;
+mod boot_theme;
 mod catalog;
 mod disks;
 mod job;
