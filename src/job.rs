@@ -56,13 +56,13 @@ impl Job {
     pub fn start(plan: Plan, repaint: impl Fn() + Send + 'static) -> Job {
         let mut steps = vec![
             "Look up latest versions".to_string(),
-            "Download Ventoy".into(),
+            "Download boot loader".into(),
         ];
         for (id, _) in &plan.tools {
             steps.push(format!("Download {}", catalog::info(*id).name));
         }
         steps.push(format!(
-            "Format {} and install Ventoy",
+            "Format {} and install boot loader",
             plan.disk.display_id()
         ));
         steps.push("Copy and verify ISOs on the USB drive".into());
@@ -171,7 +171,7 @@ fn run(plan: &Plan, ctx: &Ctx) -> Result<String, String> {
     // 1. Resolve every version up front.
     ctx.begin(0, "Asking each project for its latest release...");
     let ventoy_rel = ventoy::latest_release()?;
-    ctx.log(format!("Ventoy {}", ventoy_rel.version));
+    ctx.log(format!("Boot loader {}", ventoy_rel.version));
     let mut resolved: Vec<(ToolId, Resolved)> = Vec::new();
     for (id, ch) in &plan.tools {
         ctx.check_cancel()?;
@@ -211,13 +211,13 @@ fn run(plan: &Plan, ctx: &Ctx) -> Result<String, String> {
     ctx.finish(0);
 
     // 2. Ventoy.
-    ctx.begin(1, format!("Ventoy {}", ventoy_rel.version));
+    ctx.begin(1, format!("Boot loader {}", ventoy_rel.version));
     let ventoy_dir = {
-        let mut p = ctx.progress_fn(format!("Ventoy {}", ventoy_rel.version));
+        let mut p = ctx.progress_fn(format!("Boot loader {}", ventoy_rel.version));
         ventoy::prepare(&ventoy_rel, &cache, &mut p, &ctx.cancel)?
     };
     ctx.log(format!(
-        "Ventoy {} verified (SHA-256 OK)",
+        "Boot loader {} verified (SHA-256 OK)",
         ventoy_rel.version
     ));
     ctx.finish(1);
@@ -244,7 +244,7 @@ fn run(plan: &Plan, ctx: &Ctx) -> Result<String, String> {
     ));
     ctx.with(|s| s.formatting = true);
     ctx.detail(format!(
-        "Erasing {} and installing Ventoy ({}, {})...",
+        "Erasing {} and installing the boot loader ({}, {})...",
         disk.display_id(),
         plan.fs.cli(),
         if plan.gpt { "GPT" } else { "MBR" }
@@ -253,16 +253,13 @@ fn run(plan: &Plan, ctx: &Ctx) -> Result<String, String> {
         ctx.with(|s| s.progress = Some(f));
     })?;
     ctx.log(format!(
-        "Ventoy {} installed on {}",
+        "Boot loader {} installed on {}",
         ventoy_rel.version,
         disk.display_id()
     ));
     ctx.detail("Waiting for Windows to mount the new partition...");
     let root = platform::data_partition(&disk)?;
-    ctx.log(format!(
-        "Ventoy data partition mounted at {}",
-        root.display()
-    ));
+    ctx.log(format!("Data partition mounted at {}", root.display()));
     ctx.finish(step_format);
 
     // 5. Copy + verify.

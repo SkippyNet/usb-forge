@@ -288,7 +288,7 @@ impl UsbForgeApp {
             ui.vertical(|ui| {
                 ui.label(RichText::new("USB Forge").size(22.0).strong());
                 ui.label(
-                    RichText::new("Build a verified multi-boot USB drive with Ventoy")
+                    RichText::new("Build a verified multi-boot USB drive")
                         .color(MUTED)
                         .small(),
                 );
@@ -441,7 +441,7 @@ impl UsbForgeApp {
         if platform::SUPPORTED_FS.len() == 1 {
             ui.label(
                 RichText::new(format!(
-                    "Ventoy's {} installer always uses exFAT.",
+                    "On {} the drive is always formatted as exFAT.",
                     platform::OS_NAME
                 ))
                 .color(MUTED)
@@ -457,7 +457,7 @@ impl UsbForgeApp {
         ui.add_space(6.0);
         ui.label(
             RichText::new(
-                "Ventoy boots on both UEFI and legacy BIOS PCs, with Secure Boot support. \
+                "The drive boots on UEFI and legacy BIOS PCs. \
                  Add more ISOs later by copying them onto the drive.",
             )
             .color(MUTED)
@@ -697,7 +697,7 @@ impl UsbForgeApp {
                             ui.add_space(8.0);
                             ui.label(RichText::new("✔ Your USB drive is ready").size(18.0).color(OK).strong());
                             ui.label(format!(
-                                "Boot from it and choose an ISO from the Ventoy menu. Drop more ISOs onto {drive} any time."
+                                "Boot from it and choose an ISO from the boot menu. Drop more ISOs onto {drive} any time."
                             ));
                         }
                         Some(Err(e)) => {
