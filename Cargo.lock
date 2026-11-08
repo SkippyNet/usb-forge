@@ -2265,7 +2265,7 @@ name = "release-sign"
 version = "0.1.0"
 dependencies = [
  "ed25519-dalek",
- "getrandom 0.3.4",
+ "getrandom 0.4.3",
  "hex",
  "sha2 0.11.1",
 ]

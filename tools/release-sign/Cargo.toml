@@ -8,6 +8,6 @@ description = "Generates the USB Forge release key and signs release binaries"
 
 [dependencies]
 ed25519-dalek = { version = "2", default-features = false, features = ["std"] }
-getrandom = "0.3"
+getrandom = "0.4"
 hex = "0.4.3"
 sha2 = "0.11.1"
