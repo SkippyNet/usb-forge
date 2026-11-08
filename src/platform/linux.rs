@@ -81,6 +81,11 @@ pub fn open_url(url: &str) {
     let _ = Command::new("xdg-open").arg(url).spawn();
 }
 
+/// Show a folder in the desktop file manager.
+pub fn open_folder(path: &Path) {
+    let _ = Command::new("xdg-open").arg(path).spawn();
+}
+
 // ---- disks -------------------------------------------------------------------------------
 
 fn lsblk(target: Option<&str>) -> Result<Value, String> {

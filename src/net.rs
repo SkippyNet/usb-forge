@@ -59,6 +59,8 @@ fn cancelled(cancel: &AtomicBool) -> Result<(), String> {
 
 /// Download `url` to `dest`, hashing as it streams, and fail unless the SHA-256 matches.
 /// The file is written to `dest.part` first and only renamed into place once verified.
+/// If a previous attempt was interrupted, the download resumes from the partial file; the
+/// final checksum still covers every byte, so a bad resume can't slip through.
 pub fn download_verified(
     url: &str,
     dest: &Path,
@@ -67,7 +69,8 @@ pub fn download_verified(
     cancel: &AtomicBool,
 ) -> Result<(), String> {
     let part = dest.with_extension("part");
-    let got = download_to(url, &part, progress, cancel)?;
+    // Keep the partial file on network errors or cancel, so the next attempt can resume.
+    let got = stream_to(url, &part, true, progress, cancel)?;
     if !got.eq_ignore_ascii_case(expected_sha256) {
         let _ = std::fs::remove_file(&part);
         return Err(format!(
@@ -77,7 +80,7 @@ pub fn download_verified(
     std::fs::rename(&part, dest).map_err(|e| format!("Cannot finalize {}: {e}", dest.display()))
 }
 
-/// Stream `url` into `part` and return the SHA-256 of what was received.
+/// Stream `url` into `part` from scratch and return the SHA-256 of what was received.
 /// The file is removed again if the download fails or is cancelled.
 pub fn download_to(
     url: &str,
@@ -85,30 +88,75 @@ pub fn download_to(
     progress: Progress<'_>,
     cancel: &AtomicBool,
 ) -> Result<String, String> {
-    let result = stream_to(url, part, progress, cancel);
+    let result = stream_to(url, part, false, progress, cancel);
     if result.is_err() {
         let _ = std::fs::remove_file(part);
     }
     result
 }
 
+/// Hash the bytes already in `path` (the resumed prefix of a download).
+fn hash_prefix(path: &Path, hasher: &mut Sha256, cancel: &AtomicBool) -> Result<u64, String> {
+    let mut file = File::open(path).map_err(|e| format!("Cannot read {}: {e}", path.display()))?;
+    let mut buf = vec![0u8; CHUNK];
+    let mut done = 0u64;
+    loop {
+        cancelled(cancel)?;
+        let n = file.read(&mut buf).map_err(|e| e.to_string())?;
+        if n == 0 {
+            return Ok(done);
+        }
+        hasher.update(&buf[..n]);
+        done += n as u64;
+    }
+}
+
 fn stream_to(
     url: &str,
     part: &Path,
+    resume: bool,
     progress: Progress<'_>,
     cancel: &AtomicBool,
 ) -> Result<String, String> {
-    let resp = agent()
-        .get(url)
-        .call()
-        .map_err(|e| format!("Download failed for {url}: {e}"))?;
-    let total = resp.body().content_length();
+    let existing = if resume {
+        std::fs::metadata(part).map(|m| m.len()).unwrap_or(0)
+    } else {
+        0
+    };
+    let mut request = agent().get(url);
+    if existing > 0 {
+        request = request.header("Range", &format!("bytes={existing}-"));
+    }
+    let resp = match request.call() {
+        Ok(r) => r,
+        // 416: the partial file already holds everything (or more); verify what we have.
+        Err(ureq::Error::StatusCode(416)) if existing > 0 => {
+            let mut hasher = Sha256::new();
+            hash_prefix(part, &mut hasher, cancel)?;
+            return Ok(hex::encode(hasher.finalize()));
+        }
+        Err(e) => return Err(format!("Download failed for {url}: {e}")),
+    };
+    let resumed = existing > 0 && resp.status().as_u16() == 206;
+    let length = resp.body().content_length();
     let mut reader = resp.into_body().into_with_config().limit(u64::MAX).reader();
-    let mut out =
-        File::create(part).map_err(|e| format!("Cannot write {}: {e}", part.display()))?;
     let mut hasher = Sha256::new();
+    let (mut out, mut done) = if resumed {
+        let done = hash_prefix(part, &mut hasher, cancel)?;
+        let file = std::fs::OpenOptions::new()
+            .append(true)
+            .open(part)
+            .map_err(|e| format!("Cannot append to {}: {e}", part.display()))?;
+        (file, done)
+    } else {
+        // Server ignored the range (or nothing to resume): start over.
+        let file =
+            File::create(part).map_err(|e| format!("Cannot write {}: {e}", part.display()))?;
+        (file, 0)
+    };
+    let total = length.map(|l| l + done);
     let mut buf = vec![0u8; CHUNK];
-    let mut done = 0u64;
+    progress(done, total);
     loop {
         cancelled(cancel)?;
         let n = reader

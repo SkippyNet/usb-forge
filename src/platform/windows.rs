@@ -117,6 +117,11 @@ pub fn open_url(url: &str) {
         .spawn();
 }
 
+/// Show a folder in File Explorer.
+pub fn open_folder(path: &Path) {
+    let _ = Command::new("explorer.exe").arg(path).spawn();
+}
+
 // ---- disks -------------------------------------------------------------------------------
 
 #[derive(Deserialize)]

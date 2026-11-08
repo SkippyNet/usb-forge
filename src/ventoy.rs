@@ -7,7 +7,7 @@ use crate::net::{self, find_sha256, get_text};
 use crate::platform;
 
 /// Volume label of the data partition that holds the ISOs.
-pub const DATA_LABEL: &str = "USBFORGE";
+pub const DATA_LABEL: &str = "USB Forge";
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 // Ventoy's Linux installer only formats exFAT, so the other variants exist only on Windows.

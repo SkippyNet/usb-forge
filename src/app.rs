@@ -46,6 +46,7 @@ struct DiskScan {
 pub struct UsbForgeApp {
     needs_restart: bool,
     secure_boot: Option<bool>,
+    cache_bytes: u64,
     update: UpdateState,
     scan: Option<Result<DiskScan, String>>,
     scanning: Option<Receiver<Result<DiskScan, String>>>,
@@ -75,6 +76,7 @@ impl UsbForgeApp {
         let mut app = UsbForgeApp {
             needs_restart: platform::needs_admin_restart(),
             secure_boot: platform::secure_boot_enabled(),
+            cache_bytes: cache_size(),
             update,
             scan: None,
             scanning: None,
@@ -108,6 +110,7 @@ impl UsbForgeApp {
         if self.scanning.is_some() {
             return;
         }
+        self.cache_bytes = cache_size();
         let (tx, rx) = mpsc::channel();
         let ctx = ctx.clone();
         std::thread::spawn(move || {
@@ -423,6 +426,24 @@ impl UsbForgeApp {
             self.selected_disk = Some(n);
         }
 
+        ui.add_space(6.0);
+        ui.horizontal(|ui| {
+            ui.label(
+                RichText::new(format!(
+                    "💾 Saved downloads: {}",
+                    human_size(self.cache_bytes)
+                ))
+                .color(MUTED)
+                .small(),
+            )
+            .on_hover_text(platform::cache_dir().display().to_string());
+            if ui.small_button("Open").clicked() {
+                let dir = platform::cache_dir();
+                let _ = std::fs::create_dir_all(&dir);
+                platform::open_folder(&dir);
+            }
+        });
+
         ui.add_space(14.0);
         theme::section(ui, "2", "Format options");
         ui.label(RichText::new("File system").color(MUTED).small());
@@ -521,6 +542,13 @@ impl UsbForgeApp {
                 Some(Lookup::Loading) | None => None,
             }
         };
+        let saved = {
+            let map = self.lookups.lock().ok();
+            match map.as_ref().and_then(|m| m.get(&(tool.id, channel))) {
+                Some(Lookup::Ready(r)) => cache_state(r),
+                _ => CacheState::Missing,
+            }
+        };
         let too_big = matches!(&lookup_text, Some(Ok(_)))
             && self.fs.max_file().is_some_and(|max| {
                 self.lookups.lock().ok().is_some_and(|m| {
@@ -554,6 +582,25 @@ impl UsbForgeApp {
                         Some(Ok(t)) => {
                             let color = if too_big { DANGER } else { MUTED };
                             ui.label(RichText::new(t).color(color).small());
+                            match saved {
+                                CacheState::Saved => {
+                                    ui.label(RichText::new("✔ saved").color(OK).small())
+                                        .on_hover_text(
+                                            "Already downloaded. It's re-checked against the \
+                                             official SHA-256 before use, so it won't be \
+                                             downloaded again.",
+                                        );
+                                }
+                                CacheState::Partial(n) => {
+                                    ui.label(
+                                        RichText::new(format!("{} downloaded", human_size(n)))
+                                            .color(WARN)
+                                            .small(),
+                                    )
+                                    .on_hover_text("The download will resume where it stopped.");
+                                }
+                                CacheState::Missing => {}
+                            }
                         }
                         Some(Err(e)) => {
                             ui.label(RichText::new("lookup failed").color(DANGER).small())
@@ -817,6 +864,43 @@ impl eframe::App for UsbForgeApp {
             )
             .show(ui, |ui| self.tools_panel(ui));
     }
+}
+
+#[derive(Clone, Copy)]
+enum CacheState {
+    Missing,
+    /// A partial download of this many bytes exists and will be resumed.
+    Partial(u64),
+    /// A complete download exists (verified against the SHA-256 again before use).
+    Saved,
+}
+
+/// Is this item already in the local downloads folder?
+fn cache_state(r: &Resolved) -> CacheState {
+    let path = platform::cache_dir().join(&r.download_name);
+    if let Ok(meta) = std::fs::metadata(&path)
+        && r.size.is_none_or(|s| s == meta.len())
+    {
+        return CacheState::Saved;
+    }
+    match std::fs::metadata(path.with_extension("part")) {
+        Ok(meta) if meta.len() > 0 => CacheState::Partial(meta.len()),
+        _ => CacheState::Missing,
+    }
+}
+
+/// Total size of the local downloads folder.
+fn cache_size() -> u64 {
+    std::fs::read_dir(platform::cache_dir())
+        .map(|entries| {
+            entries
+                .flatten()
+                .filter_map(|e| e.metadata().ok())
+                .filter(|m| m.is_file())
+                .map(|m| m.len())
+                .sum()
+        })
+        .unwrap_or(0)
 }
 
 fn chip(ui: &mut egui::Ui, text: &str, color: Color32) -> egui::Response {

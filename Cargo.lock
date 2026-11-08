@@ -2921,7 +2921,7 @@ dependencies = [
 
 [[package]]
 name = "usb-forge"
-version = "0.1.2"
+version = "0.2.0"
 dependencies = [
  "ed25519-dalek",
  "eframe",

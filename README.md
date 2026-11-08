@@ -69,6 +69,13 @@ as a guide.
 | GParted Live | gparted.org `CHECKSUMS.TXT` |
 | Memtest86+ | memtest.org `sha256sum.txt` |
 
+## Saved downloads
+
+Every ISO is kept in a local downloads folder (`%LOCALAPPDATA%\UsbForge\cache` on Windows,
+`~/.cache/usb-forge` on Linux) and re-checked against the official SHA-256 before each use, so
+building another drive doesn't download it again. Items already saved show **✔ saved**.
+Interrupted downloads resume where they stopped. The checksum still covers the whole file.
+
 ## Disk safety
 
 - Only USB disks are listed. The disk that holds the running OS, the boot disk, and any disk the
@@ -101,12 +108,6 @@ To regenerate the icon on Windows, run `powershell -File assets/make-icon.ps1`.
 2. Tag the merge commit: `git tag v0.2.0 && git push origin v0.2.0` (only admins can push `v*` tags).
 3. Approve the **release** environment deployment in the Actions run. CI builds both binaries,
    signs them and publishes the GitHub release.
-
-## Third-party software
-
-The boot loader installed on the drive is currently [Ventoy](https://www.ventoy.net) (GPLv3),
-downloaded from its official releases and verified against its published SHA-256. USB Forge
-doesn't bundle or modify it. A USB Forge boot menu is in development to replace it.
 
 ## Contributing
 
