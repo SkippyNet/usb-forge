@@ -27,6 +27,8 @@ enum UpdateState {
 }
 
 const CONFIRM_WORD: &str = "ERASE";
+const SECURE_BOOT_GUIDE: &str =
+    "https://github.com/SkippyNet/usb-forge/blob/main/docs/SECURE_BOOT.md";
 
 enum Lookup {
     Loading,
@@ -43,6 +45,7 @@ struct DiskScan {
 
 pub struct UsbForgeApp {
     needs_restart: bool,
+    secure_boot: Option<bool>,
     update: UpdateState,
     scan: Option<Result<DiskScan, String>>,
     scanning: Option<Receiver<Result<DiskScan, String>>>,
@@ -71,6 +74,7 @@ impl UsbForgeApp {
         };
         let mut app = UsbForgeApp {
             needs_restart: platform::needs_admin_restart(),
+            secure_boot: platform::secure_boot_enabled(),
             update,
             scan: None,
             scanning: None,
@@ -300,6 +304,24 @@ impl UsbForgeApp {
                     chip(ui, "⚠ Not elevated", WARN);
                 } else {
                     chip(ui, &format!("✔ {}", platform::privilege_note()), OK);
+                }
+                if self.secure_boot == Some(true) {
+                    ui.add_space(4.0);
+                    if ui
+                        .small_button("How to turn it off")
+                        .on_hover_text(
+                            "Opens a guide for common PC vendors. Firmware menus vary by model, \
+                             so the steps may not exactly match your PC.",
+                        )
+                        .clicked()
+                    {
+                        platform::open_url(SECURE_BOOT_GUIDE);
+                    }
+                    chip(ui, "⚠ Secure Boot is on", WARN).on_hover_text(
+                        "Secure Boot is turned on in this PC's firmware. Some tools on a USB Forge \
+                         drive only start with Secure Boot turned off. This applies to the PC you \
+                         boot the USB drive on.",
+                    );
                 }
                 ui.add_space(8.0);
                 let mut start = None;
@@ -797,7 +819,7 @@ impl eframe::App for UsbForgeApp {
     }
 }
 
-fn chip(ui: &mut egui::Ui, text: &str, color: Color32) {
+fn chip(ui: &mut egui::Ui, text: &str, color: Color32) -> egui::Response {
     egui::Frame::new()
         .fill(color.gamma_multiply(0.15))
         .stroke(Stroke::new(1.0, color))
@@ -805,7 +827,8 @@ fn chip(ui: &mut egui::Ui, text: &str, color: Color32) {
         .inner_margin(Margin::symmetric(10, 4))
         .show(ui, |ui| {
             ui.label(RichText::new(text).color(color).small().strong());
-        });
+        })
+        .response
 }
 
 /// A selectable drive card. Returns true when clicked.

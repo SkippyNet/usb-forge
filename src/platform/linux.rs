@@ -60,6 +60,27 @@ pub fn cache_dir() -> PathBuf {
         .join("usb-forge")
 }
 
+/// Whether UEFI Secure Boot is on for this PC. `None` when it can't be determined.
+pub fn secure_boot_enabled() -> Option<bool> {
+    let vars = Path::new("/sys/firmware/efi/efivars");
+    if !Path::new("/sys/firmware/efi").exists() {
+        // Booted in legacy BIOS mode: Secure Boot doesn't exist.
+        return Some(false);
+    }
+    let entry = std::fs::read_dir(vars)
+        .ok()?
+        .flatten()
+        .find(|e| e.file_name().to_string_lossy().starts_with("SecureBoot-"))?;
+    // efivarfs: 4 bytes of attributes, then the 1-byte value.
+    let data = std::fs::read(entry.path()).ok()?;
+    data.last().map(|b| *b == 1)
+}
+
+/// Open a web page in the default browser.
+pub fn open_url(url: &str) {
+    let _ = Command::new("xdg-open").arg(url).spawn();
+}
+
 // ---- disks -------------------------------------------------------------------------------
 
 fn lsblk(target: Option<&str>) -> Result<Value, String> {

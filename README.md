@@ -46,6 +46,14 @@ install -Dm644 assets/icon.png ~/.local/share/icons/hicolor/256x256/apps/usb-for
 install -Dm644 packaging/linux/usb-forge.desktop ~/.local/share/applications/usb-forge.desktop
 ```
 
+### Secure Boot
+
+USB Forge shows a **"Secure Boot is on"** notice when the PC has Secure Boot enabled. Some
+tools on the drive only start with Secure Boot turned off.
+[docs/SECURE_BOOT.md](docs/SECURE_BOOT.md) has steps for common vendors (Dell, HP, Lenovo,
+ASUS, Acer, MSI, Gigabyte, Surface and more). Firmware menus vary by model, so treat the steps
+as a guide.
+
 ## Catalog
 
 | Item | Where the version + checksum come from |

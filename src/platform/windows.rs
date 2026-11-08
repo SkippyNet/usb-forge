@@ -82,6 +82,39 @@ pub fn cache_dir() -> PathBuf {
         .join("cache")
 }
 
+/// Whether UEFI Secure Boot is on for this PC. `None` when it can't be determined.
+/// The registry value is readable without administrator rights.
+pub fn secure_boot_enabled() -> Option<bool> {
+    let out = hidden("reg.exe")
+        .args([
+            "query",
+            r"HKLM\SYSTEM\CurrentControlSet\Control\SecureBoot\State",
+            "/v",
+            "UEFISecureBootEnabled",
+        ])
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        // Key missing: legacy BIOS boot, where Secure Boot doesn't exist.
+        return Some(false);
+    }
+    let text = String::from_utf8_lossy(&out.stdout);
+    if text.contains("0x1") {
+        Some(true)
+    } else if text.contains("0x0") {
+        Some(false)
+    } else {
+        None
+    }
+}
+
+/// Open a web page in the default browser.
+pub fn open_url(url: &str) {
+    let _ = hidden("rundll32.exe")
+        .args(["url.dll,FileProtocolHandler", url])
+        .spawn();
+}
+
 // ---- disks -------------------------------------------------------------------------------
 
 #[derive(Deserialize)]
