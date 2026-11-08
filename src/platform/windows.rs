@@ -308,9 +308,22 @@ pub fn swap_executable(new_exe: &Path) -> Result<PathBuf, String> {
     Ok(current)
 }
 
-/// Remove the previous executable left behind by an update.
+/// Remove the previous executable left behind by an update. Right after an update restart the
+/// old process may still be exiting and hold the file, so keep retrying briefly in the background.
 pub fn cleanup_after_update() {
-    if let Ok(current) = std::env::current_exe() {
-        let _ = std::fs::remove_file(current.with_extension("exe.old"));
+    let Ok(current) = std::env::current_exe() else {
+        return;
+    };
+    let old = current.with_extension("exe.old");
+    if !old.exists() {
+        return;
     }
+    std::thread::spawn(move || {
+        for _ in 0..30 {
+            if std::fs::remove_file(&old).is_ok() || !old.exists() {
+                return;
+            }
+            std::thread::sleep(Duration::from_millis(500));
+        }
+    });
 }
