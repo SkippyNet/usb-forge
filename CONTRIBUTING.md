@@ -12,8 +12,12 @@ change goes through review.
    cargo clippy --workspace --all-targets --locked -- -D warnings
    cargo test --workspace --locked
    ```
-3. Open a **pull request** against `main` and fill in the template.
-4. A maintainer reviews it. Before merging, `main` requires:
+3. **Bump the version** in `Cargo.toml` (semver: patch for fixes and wording, minor for
+   features) and commit the updated `Cargo.lock` in the same PR. Every feature or fix ships with
+   its own version, so the version must be cut before the PR is merged. (Docs-only and CI-only
+   PRs are exempt.)
+4. Open a **pull request** against `main` and fill in the template.
+5. A maintainer reviews it. Before merging, `main` requires:
    - approval from a code owner, given after your latest push
    - passing CI on Windows and Linux, plus the dependency audit
    - all review conversations resolved
