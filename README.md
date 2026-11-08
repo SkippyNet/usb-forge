@@ -2,6 +2,11 @@
 
 # USB Forge
 
+[![CI](https://github.com/SkippyNet/usb-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/SkippyNet/usb-forge/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/SkippyNet/usb-forge)](https://github.com/SkippyNet/usb-forge/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/SkippyNet/usb-forge/total)](https://github.com/SkippyNet/usb-forge/releases)
+[![License: MIT](https://img.shields.io/github/license/SkippyNet/usb-forge)](LICENSE)
+
 Build a multi-boot USB thumb drive in a few clicks. USB Forge sets up a boot menu on the drive,
 then adds the operating systems and tools you pick, each one downloaded from its official project
 and verified against that project's published SHA-256.
@@ -69,6 +74,13 @@ as a guide.
 | GParted Live | gparted.org `CHECKSUMS.TXT` |
 | Memtest86+ | memtest.org `sha256sum.txt` |
 
+## The boot menu
+
+Boot a PC from the finished drive (usually by pressing a key such as F12, F11, F9 or Esc at
+power-on) and a USB Forge menu lists every ISO on the drive. Pick one and press Enter. To add
+more later, copy any ISO onto the drive in Explorer or your file manager; it appears in the menu
+on the next boot.
+
 ## Saved downloads
 
 Every ISO is kept in a local downloads folder (`%LOCALAPPDATA%\UsbForge\cache` on Windows,
@@ -84,6 +96,42 @@ Interrupted downloads resume where they stopped. The checksum still covers the w
 - Everything is downloaded and verified **before** the drive is touched.
 - The target disk is checked again right before formatting, and you have to type `ERASE`.
 - Each ISO is hashed again after it is copied to the drive.
+
+## FAQ
+
+**Windows says "Windows protected your PC".**
+SmartScreen warns about apps it hasn't seen often. Click **More info → Run anyway**. Every
+release is signed with the project's own key (verified by the app's updater) and lists SHA-256
+checksums in `SHA256SUMS.txt` next to the downloads.
+
+**My USB drive isn't listed.**
+Only USB disks that the running system doesn't use are shown. Run `usb-forge --list-disks` to see
+every disk and why it was hidden, and include that output if you open an issue.
+
+**Why does my drive look almost empty in Explorer?**
+You only see the data partition, which holds the ISOs and a small `ventoy` folder with the
+boot menu settings. The boot menu itself lives in a second, small partition that Windows hides.
+
+**Can I still use the drive for files?**
+Yes. Anything that isn't a bootable image is ignored by the boot menu.
+
+**A tool doesn't start and the PC mentions Secure Boot.**
+See [docs/SECURE_BOOT.md](docs/SECURE_BOOT.md).
+
+**How do I update the ISOs on a drive?**
+Build the drive again. Saved downloads that are still current are reused, so only new versions
+are downloaded.
+
+## Credits
+
+USB Forge only downloads and arranges other people's work. Thanks to the projects in the catalog
+for building it and for publishing checksums that make verified downloads possible:
+[Ubuntu](https://ubuntu.com), [Fedora](https://fedoraproject.org),
+[Linux Mint](https://linuxmint.com), [Debian](https://www.debian.org),
+[Hiren's BootCD PE](https://www.hirensbootcd.org), [SystemRescue](https://www.system-rescue.org),
+[Rescuezilla](https://rescuezilla.com), [Clonezilla](https://clonezilla.org),
+[GParted](https://gparted.org) and [Memtest86+](https://memtest.org). If a tool saves your day,
+consider supporting its project.
 
 ## Building from source
 

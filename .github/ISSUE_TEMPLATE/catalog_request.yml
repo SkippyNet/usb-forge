@@ -1,0 +1,34 @@
+name: Catalog request
+description: Suggest an operating system or tool to add to the catalog.
+labels: [catalog]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        USB Forge only adds software that it can download from the **official project** and verify
+        against a **SHA-256 that project publishes**. Links to both make a request much easier to add.
+  - type: input
+    id: name
+    attributes:
+      label: Software name
+    validations:
+      required: true
+  - type: input
+    id: download
+    attributes:
+      label: Official download page
+      placeholder: https://
+    validations:
+      required: true
+  - type: input
+    id: checksum
+    attributes:
+      label: Where the project publishes its SHA-256
+      description: A checksum file (like `SHA256SUMS`), a release API, or the download page itself.
+      placeholder: https://
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it belongs on a rescue/install stick

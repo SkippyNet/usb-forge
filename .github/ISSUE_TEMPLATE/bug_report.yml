@@ -1,0 +1,66 @@
+name: Bug report
+description: Something went wrong while building a drive, booting it, or updating the app.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! For security problems, please use
+        [private vulnerability reporting](https://github.com/SkippyNet/usb-forge/security/advisories/new) instead.
+  - type: input
+    id: version
+    attributes:
+      label: USB Forge version
+      description: Shown at the top right of the app, or run `usb-forge --version`.
+      placeholder: "0.3.1"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11
+        - Windows 10
+        - Ubuntu
+        - Fedora
+        - Linux Mint
+        - Debian
+        - Arch
+        - Other Linux (say which below)
+    validations:
+      required: true
+  - type: dropdown
+    id: stage
+    attributes:
+      label: Where did it go wrong?
+      options:
+        - Finding my USB drive
+        - Looking up versions or downloading
+        - Formatting / installing the boot menu
+        - Copying or verifying ISOs
+        - Booting from the finished drive
+        - Self-update
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: activity
+    attributes:
+      label: Activity log
+      description: Copy the lines from the **Activity** panel on the build screen, if you got that far.
+      render: text
+  - type: textarea
+    id: disks
+    attributes:
+      label: Disk list
+      description: |
+        For drive-detection problems, paste the output of `usb-forge --list-disks`.
+        It only reads disk information and never writes to a disk.
+      render: text
