@@ -124,8 +124,11 @@ are downloaded.
 
 ## Credits
 
-USB Forge only downloads and arranges other people's work. Thanks to the projects in the catalog
-for building it and for publishing checksums that make verified downloads possible:
+USB Forge only downloads and arranges other people's work. The boot menu is powered by
+[Ventoy](https://www.ventoy.net) (GPLv3), which USB Forge downloads from its official GitHub
+releases, verifies against its published SHA-256 and installs unmodified, adding only a theme and
+settings file. Thanks to Ventoy and to the projects in the catalog for building them and for
+publishing checksums that make verified downloads possible:
 [Ubuntu](https://ubuntu.com), [Fedora](https://fedoraproject.org),
 [Linux Mint](https://linuxmint.com), [Debian](https://www.debian.org),
 [Hiren's BootCD PE](https://www.hirensbootcd.org), [SystemRescue](https://www.system-rescue.org),
