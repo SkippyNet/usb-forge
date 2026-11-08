@@ -1,0 +1,5 @@
+/target
+*.key
+*.download
+*.part
+*.exe.old
