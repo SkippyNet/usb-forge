@@ -1,0 +1,7 @@
+/target
+*.key
+*.download
+*.part
+*.exe.old
+CLAUDE.md
+.claude/

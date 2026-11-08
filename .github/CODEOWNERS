@@ -1,0 +1,13 @@
+# Every change needs approval from a code owner (enforced by the main-branch ruleset).
+*                       @SkippyNet
+
+# Security-critical paths: release pipeline, trust anchor, updater, disk safety.
+/.github/               @SkippyNet
+/keys/                  @SkippyNet
+/tools/                 @SkippyNet
+/src/updater.rs         @SkippyNet
+/src/release_msg.rs     @SkippyNet
+/src/disks.rs           @SkippyNet
+/src/platform/          @SkippyNet
+/Cargo.lock             @SkippyNet
+/rust-toolchain.toml    @SkippyNet
