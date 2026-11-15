@@ -29,6 +29,9 @@ The app checks for new versions when it starts. When one is available it shows
 **Update & restart**. It installs the update only if the release's Ed25519 signature checks
 out against the key built into the app (see [SECURITY.md](SECURITY.md)).
 
+USB Forge has no telemetry and no account. [PRIVACY.md](PRIVACY.md) lists every request it
+makes and what it keeps on your computer.
+
 ### Windows
 
 Run the `.exe`. Formatting needs administrator rights, so click **Restart as administrator**
